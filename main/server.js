@@ -3,6 +3,7 @@ class ServerData {
       if (!this.server) {
         const { runDB } = await import("./config.js");
         const server = await runDB();
+        // console.log(server)
         this.server = server;
       }
       return this.server;

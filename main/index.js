@@ -8,13 +8,18 @@ const nodemailer = require("nodemailer");
 const { fetchDiv } = require('./bind.js')
 const app = express(); //creates the express app
 const router = express.Router()
+
+const cors__ = ["http://localhost:5173","https://collabowid.org","https://colllabowiduko.netlify.app"]
+// if(window.location.origin.match("localhost"))
+//     cors__ = ["https://collabowid.org","https://colllabowiduko.netlify.app","http://localhost"]
+
 app.use(cors({
-    origin : ["https://collabowid2.web.app","https://collabowid2.firebaseapp.com","https://colllabowiduko.netlify.app"]
+    origin : cors__
 }));
 
-app.use( bodyParser.json({ limit : '3000mb' }) );       // to support JSON-encoded bodies
+app.use(bodyParser.json({ limit : '3000mb' }));       // to support JSON-encoded bodies
 
-app.use( bodyParser.urlencoded({
+app.use(bodyParser.urlencoded({
     limit : '50mb',// to support URL-encoded bodies
     extended : true
 }));
@@ -23,11 +28,13 @@ app.use( bodyParser.urlencoded({
 router.post("/email", async(req,res) => {
     try{
 
+        const bindFetch = await fetchDiv()
+
         let transporter = nodemailer.createTransport({
             service : process.env.service,
             host: process.env.host,
-            port: process.env.port,
-            secure: true,
+            // port: process.env.port,
+            // secure: true,
             auth : {
                 user: process.env.email,
                 pass: process.env.password
@@ -35,17 +42,28 @@ router.post("/email", async(req,res) => {
         });
         const mailOptions = {
             from : 'late developers ' + process.env.email, // sender address
-            to : req.body.email, // list of receivers
+            to : "info@collabowid.org", // list of receivers
             subject : req.body.subject, // Subject line
             html : req.body.html // plain text body
         };
     
+        const insert_rows = await bindFetch.INSERT({          
+            type : "one",
+            db : process.env.DATABASE,
+            collection : process.env.COLLECTION,
+            data : {
+                email : req.body.email
+            },
+            options : {}
+        })
+
         const info = await transporter.sendMail(mailOptions);
         if(info)
             res.status(200).json({ 'status' : true, info });
 
     }catch(error){
-        res.status(500).json({ error : error.message})
+        console.log({error:error.message})
+        res.status(500).json({ status : false, error : error.message})
     }
 })
 
@@ -53,48 +71,80 @@ router.post("/add", async (req, res) => {
 
     try{
 
-        let {l_name, f_name, telephone, email} = req.body
+        let { email } = req.body
 
         const bindFetch = await fetchDiv()
 
-        const query = {}
+        const query = { email }
         const { config, error } = await bindFetch.SELECT({ query, type : "one", db : process.env.DATABASE, collection : process.env.COLLECTION, options : {} })
-        
-        if(error){
-            res.status(500).json({status:false,response:error.message})
-        }
+        // console.log("db:" + process.env.DATABASE)
+        console.log(config)
+        // if(error){
+        //     res.status(500).json({status:false,error:error.message})
+        // }
         if(config){
 
+            res.status(200).json({response:"already in our system", status:false})
+
+        }else{
             const insert_rows = await bindFetch.INSERT({
           
                 type : "one",
                 db : process.env.DATABASE,
                 collection : process.env.COLLECTION,
                 data : {
-                    l_name,
-                    f_name,
-                    telephone,
+                    // name,
                     email
                 },
                 options : {}
-              })
+            })
 
-              if(insert_rows.hasOwnProperty("error") && insert_rows.error){
+            if(insert_rows.hasOwnProperty("error") && insert_rows.error){
                 res.status(500).json({status:false,response:insert_rows.error.message})
-              }
+            }
 
-              res.status(200).json({response:"success", status:true})
+            res.status(200).json({response:"success", status:true})
 
-        }else{
-
-            res.status(200).json({response:"already in our system", status:false})
+            
         }
 
     }catch(error){
 
-        res.status(500).json({status:false,response:error.message})
+        res.status(500).json({status:false,error:error.message})
     }
 
+
+})
+
+
+router.post("/report", async (req, res) => {
+
+    try{
+
+        const bindFetch = await fetchDiv()
+
+        const insert_rows = await bindFetch.INSERT({
+        
+            type : "one",
+            db : process.env.DATABASE,
+            collection : process.env.REPORT,
+            data : {
+                ...req.body
+            },
+            options : {}
+        })
+
+        console.log(insert_rows)
+        // if(insert_rows.hasOwnProperty("error") && insert_rows.error){
+        //     res.status(500).json({status:false,response:insert_rows.error.message})
+        // }
+
+        res.status(200).json({response:"success", status:true})
+
+    }catch(error){
+
+        res.status(500).json({status:false,error:error.message})
+    }
 
 })
 
