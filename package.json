@@ -29,6 +29,7 @@
     "netlify-cli": "^17.26.2",
     "nodemailer": "^6.9.13",
     "nspell": "^2.1.5",
+    "pdf-lib": "^1.17.1",
     "serverless-http": "^3.2.0"
   }
 }
